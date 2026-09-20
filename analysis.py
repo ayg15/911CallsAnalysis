@@ -67,8 +67,9 @@ def summarize_calls(calls: pd.DataFrame, top_n: int = 5) -> dict[str, Any]:
 
 
 def calls_by_month(calls: pd.DataFrame) -> pd.Series:
-    """Count calls for each observed month number."""
-    return calls.groupby("month").size().sort_index().rename("calls")
+    """Count calls by chronological year-month periods."""
+    periods = calls["timeStamp"].dt.to_period("M")
+    return calls.groupby(periods).size().sort_index().rename("calls")
 
 
 def calls_by_date(calls: pd.DataFrame, reason: str | None = None) -> pd.Series:

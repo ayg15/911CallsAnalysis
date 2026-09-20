@@ -54,6 +54,8 @@ The project reproduces the exploration performed in the original notebook:
 |-- main.py                           # complete command-line workflow
 |-- notebooks/
 |   `-- 911 Calls Data Analysis.ipynb # interactive walkthrough
+|-- tests/                            # automated unit and integration tests
+|-- requirements.in                  # direct dependency declarations
 |-- requirements.txt
 `-- README.md
 ```
@@ -70,6 +72,21 @@ python -m pip install -r requirements.txt
 ```
 
 The execution-policy change applies only to the current PowerShell session.
+The installed `ipykernel` dependency allows `.venv` to be selected as the
+notebook kernel in VS Code or Jupyter.
+
+### Dependency management
+
+Direct dependencies are maintained in `requirements.in`; `requirements.txt`
+is generated and should not be edited manually. To update the lock file:
+
+```powershell
+python -m pip install pip-tools
+pip-compile requirements.in
+```
+
+Use `pip-compile --upgrade requirements.in` when you intentionally want to
+upgrade all dependencies.
 
 ## Run the analysis
 
@@ -88,6 +105,15 @@ python main.py path/to/911.csv --output-dir reports
 The script prints the summary statistics and saves all charts from the
 original analysis as PNG files in `output/`, or in the directory supplied with
 `--output-dir`. Add `--show` to display the plots interactively as well.
+
+## Run the tests
+
+The tests use Python's standard-library test runner and do not require an
+additional testing package:
+
+```powershell
+python -m unittest discover -s tests -v
+```
 
 ## Use the modules directly
 

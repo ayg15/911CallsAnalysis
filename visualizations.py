@@ -62,19 +62,29 @@ def plot_calls_by_month(calls: pd.DataFrame) -> Figure:
 
 
 def plot_monthly_trend(calls: pd.DataFrame) -> Figure:
-    """Plot total calls for each observed month."""
+    """Plot total calls along a chronological monthly timeline."""
     monthly = calls_by_month(calls)
     fig, ax = plt.subplots(figsize=(10, 5))
-    monthly.plot(marker="o", ax=ax)
-    return _finish_axes(ax, "Monthly call volume", "Month", "Calls")
+    positions = range(len(monthly))
+    ax.plot(positions, monthly.to_numpy(), marker="o")
+    ax.set_xticks(list(positions), monthly.index.astype(str), rotation=45, ha="right")
+    return _finish_axes(ax, "Monthly call volume", "Year-month", "Calls")
 
 
 def plot_monthly_regression(calls: pd.DataFrame) -> Figure:
-    """Plot the notebook's linear fit of calls against month number."""
-    monthly = calls_by_month(calls).reset_index()
+    """Plot a linear fit against chronologically ordered months."""
+    monthly = calls_by_month(calls)
+    regression_data = pd.DataFrame(
+        {"month_index": range(len(monthly)), "calls": monthly.to_numpy()}
+    )
     fig, ax = plt.subplots(figsize=(8, 5))
-    sns.regplot(data=monthly, x="month", y="calls", ax=ax)
-    return _finish_axes(ax, "Monthly call volume with linear fit", "Month", "Calls")
+    sns.regplot(data=regression_data, x="month_index", y="calls", ax=ax)
+    ax.set_xticks(
+        regression_data["month_index"], monthly.index.astype(str), rotation=45, ha="right"
+    )
+    return _finish_axes(
+        ax, "Monthly call volume with linear fit", "Year-month", "Calls"
+    )
 
 
 def plot_daily_calls(calls: pd.DataFrame, reason: str | None = None) -> Figure:

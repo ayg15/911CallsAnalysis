@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+from collections.abc import Iterator
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -48,23 +49,35 @@ def print_summary(summary: dict[str, object]) -> None:
         print(f"\n{label}:\n{summary[key].to_string()}")
 
 
-def build_plots(calls: pd.DataFrame) -> dict[str, Figure]:
-    """Create every visualization from the original notebook."""
-    plots = {
-        "calls_by_reason": plot_calls_by_reason(calls),
-        "calls_by_weekday": plot_calls_by_weekday(calls),
-        "calls_by_month": plot_calls_by_month(calls),
-        "monthly_trend": plot_monthly_trend(calls),
-        "monthly_regression": plot_monthly_regression(calls),
-        "daily_calls": plot_daily_calls(calls),
-        "weekday_hour_heatmap": plot_weekday_hour_heatmap(calls),
-        "weekday_hour_clustermap": plot_weekday_hour_clustermap(calls),
-        "weekday_month_heatmap": plot_weekday_month_heatmap(calls),
-        "weekday_month_clustermap": plot_weekday_month_clustermap(calls),
-    }
+def iter_plots(calls: pd.DataFrame) -> Iterator[tuple[str, Figure]]:
+    """Yield each visualization so callers need to hold only one at a time."""
+    yield "calls_by_reason", plot_calls_by_reason(calls)
+    yield "calls_by_weekday", plot_calls_by_weekday(calls)
+    yield "calls_by_month", plot_calls_by_month(calls)
+    yield "monthly_trend", plot_monthly_trend(calls)
+    yield "monthly_regression", plot_monthly_regression(calls)
+    yield "daily_calls", plot_daily_calls(calls)
+    yield "weekday_hour_heatmap", plot_weekday_hour_heatmap(calls)
+    yield "weekday_hour_clustermap", plot_weekday_hour_clustermap(calls)
+    yield "weekday_month_heatmap", plot_weekday_month_heatmap(calls)
+    yield "weekday_month_clustermap", plot_weekday_month_clustermap(calls)
     for reason in calls["reason"].dropna().unique():
-        plots[f"daily_calls_{reason.lower()}"] = plot_daily_calls(calls, reason)
-    return plots
+        yield f"daily_calls_{reason.lower()}", plot_daily_calls(calls, reason)
+
+
+def save_plots(calls: pd.DataFrame, output_dir: Path, show: bool = False) -> int:
+    """Save every plot and close it immediately unless interactive display is requested."""
+    output_dir.mkdir(parents=True, exist_ok=True)
+    plot_count = 0
+    for name, figure in iter_plots(calls):
+        figure.savefig(output_dir / f"{name}.png", dpi=150, bbox_inches="tight")
+        plot_count += 1
+        if not show:
+            plt.close(figure)
+
+    if show:
+        plt.show()
+    return plot_count
 
 
 def main() -> None:
@@ -73,16 +86,8 @@ def main() -> None:
     print_summary(summarize_calls(calls))
 
     output_dir = Path(args.output_dir)
-    output_dir.mkdir(parents=True, exist_ok=True)
-    plots = build_plots(calls)
-    for name, figure in plots.items():
-        figure.savefig(output_dir / f"{name}.png", dpi=150, bbox_inches="tight")
-
-    print(f"\nSaved {len(plots)} plots to {output_dir.resolve()}")
-    if args.show:
-        plt.show()
-    else:
-        plt.close("all")
+    plot_count = save_plots(calls, output_dir, show=args.show)
+    print(f"\nSaved {plot_count} plots to {output_dir.resolve()}")
 
 
 if __name__ == "__main__":
